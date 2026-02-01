@@ -20,9 +20,9 @@ impl CloudflareClient {
         }
     }
 
-    pub async fn list_dns_records(&self, zone_id: &str) -> eyre::Result<Vec<Record>> {
+    pub async fn list_dns_records(&self, zone_id: &str) -> eyre::Result<Vec<RecordResponse>> {
         let endpoint = format!("{CLOUDFLARE_API_URL}/zones/{zone_id}/dns_records");
-        let response: CloudflareResponse<Vec<Record>> = self
+        let response: CloudflareResponse<Vec<RecordResponse>> = self
             .http_client
             .get(endpoint)
             .bearer_auth(&self.auth_token)
@@ -52,7 +52,7 @@ impl CloudflareClient {
         &self,
         zone_id: &str,
         dns_record_id: &str,
-        record: Record,
+        record: RecordRequest,
     ) -> eyre::Result<()> {
         if self.mock {
             println!(
@@ -62,7 +62,7 @@ impl CloudflareClient {
         }
 
         let endpoint = format!("{CLOUDFLARE_API_URL}/zones/{zone_id}/dns_records/{dns_record_id}");
-        let response: CloudflareResponse<Record> = self
+        let response: CloudflareResponse<RecordResponse> = self
             .http_client
             .put(endpoint)
             .bearer_auth(&self.auth_token)
@@ -81,8 +81,42 @@ impl CloudflareClient {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Record {
+#[derive(Debug, Serialize)]
+pub struct RecordRequest {
+    name: String,
+    ttl: usize,
+    #[serde(rename = "type")]
+    record_type: RecordType,
+    comment: Option<String>,
+    content: Option<String>,
+    options: Option<RecordRequestSettings>,
+    // Missing TAGS.
+}
+
+impl RecordRequest {
+    pub fn response_with_content(
+        record_response: RecordResponse,
+        new_content: Option<String>,
+    ) -> Self {
+        Self {
+            name: record_response.name,
+            ttl: record_response.ttl,
+            record_type: record_response.record_type,
+            comment: record_response.comment,
+            content: new_content,
+            options: None,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct RecordRequestSettings {
+    ipv4_only: bool,
+    ipv6_only: bool,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct RecordResponse {
     pub name: String,
     pub id: String,
     pub ttl: usize,
@@ -93,7 +127,7 @@ pub struct Record {
     pub proxied: Option<bool>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum RecordType {
     A,
     AAAA,

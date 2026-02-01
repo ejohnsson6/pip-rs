@@ -1,16 +1,18 @@
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::net::IpAddr;
 
 use clap::Parser;
 use eyre::Context;
+use log::info;
 use pinger::IpPinger;
 
-use crate::cloudflare::{CloudflareClient, RecordType};
+use crate::cloudflare::{CloudflareClient, RecordRequest, RecordType};
 
 pub mod cli;
 pub mod cloudflare;
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
+    env_logger::init();
     color_eyre::install()?;
     dotenvy::dotenv()?;
 
@@ -58,20 +60,31 @@ async fn main() -> eyre::Result<()> {
                 .collect::<Vec<_>>(),
         };
 
-        println!("LIST RESPONSE (IP: {ip:?}): {filtered:#?}");
+        info!("LIST RESPONSE (IP: {ip:?}): {filtered:#?}");
+
+        let new_content = Some(ip.to_string());
 
         for record in filtered.into_iter() {
-            let mut record = record;
-            let old_content = record.content;
-            record.content = Some(ip.to_string());
-            let new_content = record.content.clone();
             let id = record.id.clone();
+            if record.content.eq(&new_content) {
+                info!(
+                    "Record {} is already up to date, skipping update",
+                    record.name
+                );
+                continue;
+            }
+
             cloudflare_client
-                .overwrite_dns_record(zone_id, &id, record)
+                .overwrite_dns_record(
+                    zone_id,
+                    &id,
+                    RecordRequest::response_with_content(record.clone(), new_content.clone()),
+                )
                 .await
                 .wrap_err("Failed to send overwriting cloudflare record")?;
             println!(
-                "Updated record in zone {zone_id} / record {id} from {old_content:?} -> {new_content:?}",
+                "Updated record in zone {zone_id} / record {id} from {:?} -> {new_content:?}",
+                &record.content
             );
         }
     }

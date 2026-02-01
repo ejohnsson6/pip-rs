@@ -8,6 +8,6 @@ pub struct Args {
     pub zone_ids: Vec<String>,
     #[clap(short, long, env = "CLOUDFLARE_AUTH_KEY")]
     pub cloudflare_auth_key: String,
-    #[clap(short, long, env = "")]
+    #[clap(short, long, env = "MOCK")]
     pub mock: bool,
 }
