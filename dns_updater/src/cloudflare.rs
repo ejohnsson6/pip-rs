@@ -66,6 +66,7 @@ impl CloudflareClient {
             .http_client
             .put(endpoint)
             .bearer_auth(&self.auth_token)
+            .json(&record)
             .send()
             .await
             .wrap_err("Failed to send overwrite DNS record request")?
@@ -89,8 +90,9 @@ pub struct RecordRequest {
     record_type: RecordType,
     comment: Option<String>,
     content: Option<String>,
-    options: Option<RecordRequestSettings>,
-    // Missing TAGS.
+    proxied: Option<bool>,
+    settings: Option<RecordRequestSettings>,
+    tags: Vec<String>, // TODO: Should be a list of tags but we'll keep it empty.
 }
 
 impl RecordRequest {
@@ -104,7 +106,9 @@ impl RecordRequest {
             record_type: record_response.record_type,
             comment: record_response.comment,
             content: new_content,
-            options: None,
+            proxied: record_response.proxied,
+            settings: None,
+            tags: vec![],
         }
     }
 }
