@@ -3,6 +3,7 @@ FROM rust:1.92 AS builder
 WORKDIR /app
 
 ARG TARGETARCH # https://docs.docker.com/build/building/multi-platform/
+RUN if [ "$TARGETARCH" = "" ];      then echo  "x86_64-unknown-linux-musl" | tee /rust-target; fi
 RUN if [ "$TARGETARCH" = "amd64" ]; then echo  "x86_64-unknown-linux-musl" | tee /rust-target; fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then echo "aarch64-unknown-linux-musl" | tee /rust-target; fi
 
