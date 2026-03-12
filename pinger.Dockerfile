@@ -7,7 +7,7 @@ RUN if [ "$TARGETARCH" = "" ];      then echo  "x86_64-unknown-linux-musl" | tee
 RUN if [ "$TARGETARCH" = "amd64" ]; then echo  "x86_64-unknown-linux-musl" | tee /rust-target; fi
 RUN if [ "$TARGETARCH" = "arm64" ]; then echo "aarch64-unknown-linux-musl" | tee /rust-target; fi
 
-RUN apt-get update && apt-get install -y musl-tools
+RUN apt-get update && apt-get install -y musl-tools ca-certificates
 
 RUN rustup target add $(cat /rust-target)
 
@@ -34,6 +34,9 @@ RUN mv /app/target/$(cat /rust-target)/release/dns_updater /dns_updater
 
 # Runner
 FROM scratch
+
+# Copied certificates from build container
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=builder /dns_updater .
 
