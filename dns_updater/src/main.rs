@@ -14,9 +14,11 @@ pub mod cloudflare;
 async fn main() -> eyre::Result<()> {
     env_logger::init();
     color_eyre::install()?;
-    dotenvy::dotenv()?;
+    dotenvy::dotenv().ok();
 
     let args = cli::Args::parse();
+
+    println!("ARGS: {args:?}");
 
     let mut pinger = IpPinger::builder();
     for remote in args.remotes.iter() {
