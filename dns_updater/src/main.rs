@@ -18,8 +18,6 @@ async fn main() -> eyre::Result<()> {
 
     let args = cli::Args::parse();
 
-    println!("ARGS: {args:?}");
-
     let mut pinger = IpPinger::builder();
     for remote in args.remotes.iter() {
         pinger = pinger
